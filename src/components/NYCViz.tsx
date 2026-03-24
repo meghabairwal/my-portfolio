@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const NYC_BOUNDS = { minLon: -74.26, maxLon: -73.69, minLat: 40.60, maxLat: 40.90 };
-const W = 800;
+const NYC_BOUNDS = { minLon: -74.26, maxLon: -73.60, minLat: 40.65, maxLat: 40.88 };
+const W = 1100;
 // H derived so (lon_range_rad / mercY_range) = W/H → tiles are always square, no distortion
 const _mMax = Math.log(Math.tan(Math.PI / 4 + NYC_BOUNDS.maxLat * Math.PI / 360));
 const _mMin = Math.log(Math.tan(Math.PI / 4 + NYC_BOUNDS.minLat * Math.PI / 360));
@@ -395,7 +395,7 @@ export default function NYCViz() {
   const perHour  = spanHrs > 0 ? Math.round(complaints.length / spanHrs) : null;
   const peakH    = hourData.reduce((best, d) => d.count > best.count ? d : best, hourData[0]);
 
-  const chartCard = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1.25rem 1.25rem 1rem" };
+  const chartCard = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "0.85rem 1rem 0.75rem" };
   const chartLabel = { fontSize: "0.7rem" as const, fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.4)" };
 
   return (
@@ -607,9 +607,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {catPieData[0]?.name.toLowerCase()} leads
             </p>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
+                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={36} outerRadius={60} paddingAngle={2} stroke="none">
                   {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -636,9 +636,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {boroPieData[0]?.name} loudest
             </p>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
+                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={36} outerRadius={60} paddingAngle={2} stroke="none">
                   {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -665,7 +665,7 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#38bdf8", marginBottom: "0.75rem" }}>
               peaks at {peakH?.hour}
             </p>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={170}>
               <AreaChart data={hourData} margin={{ top: 4, right: 12, left: 8, bottom: 24 }}>
                 <defs>
                   <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
