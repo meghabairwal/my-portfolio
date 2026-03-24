@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { terminalLines, personal } from "@/lib/data";
 
@@ -93,29 +94,59 @@ export default function Hero() {
       }} />
 
       <div style={{ maxWidth: "800px", width: "100%", zIndex: 1 }}>
-        {/* Name */}
+        {/* Name + headshot */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          style={{ marginBottom: "1.5rem" }}
+          style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "2rem" }}
         >
-          <p className="section-label" style={{ marginBottom: "1rem" }}>// portfolio</p>
-          <h1
-            className="gradient-text"
-            style={{
-              fontSize: "clamp(2.5rem, 6vw, 5rem)",
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              marginBottom: "0.75rem",
-            }}
-          >
-            {personal.name}
-          </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", maxWidth: "500px" }}>
-            {personal.subtitle}
-          </p>
+          {/* Headshot */}
+          <div style={{ flexShrink: 0, position: "relative" }}>
+            <div style={{
+              width: 160, height: 160, borderRadius: "50%",
+              border: "2px solid var(--green)",
+              boxShadow: "0 0 24px rgba(124,185,136,0.25)",
+              overflow: "hidden",
+              position: "relative",
+            }}>
+              <Image
+                src="/1772542543-megha-bairwal_2026_0107-96_crop.jpeg"
+                alt="Megha Bairwal"
+                fill
+                style={{ objectFit: "cover" }}
+                priority
+              />
+            </div>
+            {/* Online dot */}
+            <span style={{
+              position: "absolute", bottom: 4, right: 4,
+              width: 14, height: 14, borderRadius: "50%",
+              background: "var(--green)",
+              border: "2px solid var(--bg)",
+              boxShadow: "0 0 8px rgba(124,185,136,0.6)",
+            }} />
+          </div>
+
+          {/* Text */}
+          <div>
+            <p className="section-label" style={{ marginBottom: "0.6rem" }}>// portfolio</p>
+            <h1
+              className="gradient-text"
+              style={{
+                fontSize: "clamp(2.5rem, 6vw, 5rem)",
+                fontWeight: 700,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                marginBottom: "0.75rem",
+              }}
+            >
+              {personal.name}
+            </h1>
+            <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", maxWidth: "500px" }}>
+              {personal.subtitle}
+            </p>
+          </div>
         </motion.div>
 
         {/* Terminal */}

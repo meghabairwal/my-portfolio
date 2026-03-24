@@ -5,6 +5,7 @@ import Skills from "@/components/Skills";
 import Experience from "@/components/Experience";
 import Publications from "@/components/Publications";
 import Projects from "@/components/Projects";
+import NYCViz from "@/components/NYCViz";
 import Contact from "@/components/Contact";
 
 export default function Page() {
@@ -17,6 +18,7 @@ export default function Page() {
       <Experience />
       <Publications />
       <Projects />
+      <NYCViz />
       <Contact />
     </main>
   );

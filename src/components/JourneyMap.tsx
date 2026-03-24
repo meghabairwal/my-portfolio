@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { geoMercator } from "d3-geo";
+import { geoOrthographic } from "d3-geo";
 import {
   ComposableMap,
   Geographies,
@@ -14,17 +14,20 @@ import {
 } from "react-simple-maps";
 import { journeyStops } from "@/lib/data";
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+const GEO_URL    = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+const STATES_URL = "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector/geojson/ne_110m_admin_1_states_provinces.geojson";
 const NYC_COORDS: [number, number] = [-74.006, 40.7128];
 
-// Each stop gets its own focused map view
-const STOP_VIEWS: Record<string, { center: [number, number]; scale: number }> = {
-  california: { center: [-119, 38],  scale: 800  },
-  india:      { center: [-10, 35],   scale: 190  },
-  michigan:   { center: [-90, 45],   scale: 520  },
-  denmark:    { center: [-18, 53],   scale: 320  },
-  dc:         { center: [-77, 39],   scale: 680  },
-  nyc:        { center: [-74, 41],   scale: 900  },
+// geoOrthographic: rotate=[lambda, phi, 0] centers the globe at lon=-lambda, lat=-phi
+type ProjCfg = { rotate: [number, number, number]; scale: number };
+
+const STOP_VIEWS: Record<string, ProjCfg> = {
+  california: { rotate: [119,  -37, 0], scale: 600 },
+  india:      { rotate: [-77,  -28, 0], scale: 350 },
+  michigan:   { rotate: [83,   -42, 0], scale: 550 },
+  denmark:    { rotate: [-12,  -56, 0], scale: 450 },
+  dc:         { rotate: [77,   -39, 0], scale: 600 },
+  nyc:        { rotate: [74,   -41, 0], scale: 750 },
 };
 
 const WEATHER_QUERIES: Record<string, string> = {
@@ -47,6 +50,24 @@ function haversine(a: [number, number], b: [number, number]): number {
 
 interface WeatherData { temp: string; desc: string; icon: string }
 
+const easeInOut = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+// Wraps destination longitude so the plane travels via the shorter path
+const wrapLon = (from: number, to: number) => {
+  const diff = to - from;
+  if (diff > 180)  return to - 360;
+  if (diff < -180) return to + 360;
+  return to;
+};
+
+// Normalizes a longitude to [-180, 180] for use in Marker coordinates
+const normalizeLon = (lon: number) => {
+  let l = lon;
+  while (l < -180) l += 360;
+  while (l >  180) l -= 360;
+  return l;
+};
+
 function weatherIcon(desc: string): string {
   const d = desc.toLowerCase();
   if (d.includes("sunny") || d.includes("clear")) return "☀️";
@@ -63,15 +84,18 @@ export default function JourneyMap() {
   const [activeId, setActiveId]         = useState("california");
   const [hoveredId, setHoveredId]       = useState<string | null>(null);
   const [revealedIdx, setRevealedIdx]   = useState(0);
-  const [projCfg, setProjCfg]           = useState(STOP_VIEWS.california);
-  const [mapKey, setMapKey]             = useState(0);
-  const [mapOpacity, setMapOpacity]     = useState(1);
+  const [projCfg, setProjCfg]           = useState<ProjCfg>(STOP_VIEWS.california);
   const [loaded, setLoaded]             = useState(false);
   const [weather, setWeather]           = useState<Record<string, WeatherData>>({});
   const [mapCoords, setMapCoords]       = useState<{ lon: number; lat: number } | null>(null);
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
+  interface FlightAnim { fromId: string; toId: string; flightTime: string; rawProgress: number }
+  const [flightAnim, setFlightAnim]     = useState<FlightAnim | null>(null);
+  const rafRef                          = useRef<number | null>(null);
+
   useEffect(() => { setLoaded(true); }, []);
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 
   useEffect(() => {
     journeyStops.forEach((stop) => {
@@ -96,15 +120,22 @@ export default function JourneyMap() {
 
   const handleMapMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
+    const svgRenderedH = rect.width * (440 / 800);
+    const clipOffset = Math.max(0, (svgRenderedH - rect.height) / 2);
     const svgX = ((e.clientX - rect.left) / rect.width) * 800;
-    const svgY = ((e.clientY - rect.top) / rect.height) * 420;
+    const svgY = (((e.clientY - rect.top) + clipOffset) / svgRenderedH) * 440;
     try {
-      const proj = geoMercator().scale(projCfg.scale).center(projCfg.center).translate([400, 210]);
+      const proj = geoOrthographic()
+        .rotate(projCfg.rotate)
+        .scale(projCfg.scale)
+        .translate([400, 220]);
       const coords = proj.invert?.([svgX, svgY]);
       if (coords && isFinite(coords[0]) && isFinite(coords[1])) {
         setMapCoords({ lon: coords[0], lat: coords[1] });
+      } else {
+        setMapCoords(null);
       }
-    } catch (_) {}
+    } catch (_) { setMapCoords(null); }
   }, [projCfg]);
 
   const fmtCoord = (n: number, dir: "NS" | "EW") => {
@@ -115,15 +146,92 @@ export default function JourneyMap() {
 
   const selectStop = (stopId: string) => {
     if (stopId === activeId) return;
-    const idx = journeyStops.findIndex(s => s.id === stopId);
-    setMapOpacity(0);
-    setTimeout(() => {
-      setActiveId(stopId);
-      setRevealedIdx(prev => Math.max(prev, idx));
-      setProjCfg(STOP_VIEWS[stopId]);
-      setMapKey(k => k + 1);
-      setMapOpacity(1);
-    }, 220);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    const fromStop = journeyStops.find(s => s.id === activeId)!;
+    const toStop   = journeyStops.find(s => s.id === stopId)!;
+    const fromCfg  = { ...projCfg };
+    const toCfg    = STOP_VIEWS[stopId];
+    const toIdx    = journeyStops.findIndex(s => s.id === stopId);
+
+    const pair = [fromStop.id, stopId].sort().join("-");
+    const distMiles = haversine(fromStop.coordinates, toStop.coordinates);
+    const totalMins = Math.round(distMiles / 550 * 60);
+    const hrs  = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    const flightTime = pair === "dc-nyc" ? "4h train"
+      : hrs > 0 ? `${hrs}h ${mins}m flight` : `${totalMins}m flight`;
+
+    // Detect Pacific route (wrapLon returns a value offset by ±360 from destination)
+    const adjToCoordLon = wrapLon(fromStop.coordinates[0], toStop.coordinates[0]);
+    const viaPacific    = adjToCoordLon !== toStop.coordinates[0];
+
+    // For orthographic, we animate the rotation lambda (globe spin)
+    // Increasing lambda spins the globe westward; decreasing spins eastward
+    const fromLambda = fromCfg.rotate[0];
+    const toLambda   = toCfg.rotate[0];
+
+    type KF = { rotate: [number, number, number]; scale: number; t: number };
+    let kfs: KF[];
+
+    if (viaPacific) {
+      const goingWest = adjToCoordLon < fromStop.coordinates[0]; // true for CA→India
+      let targetLambda: number;
+      if (goingWest) {
+        // Spin globe westward: lambda increases past current toLambda
+        targetLambda = toLambda < fromLambda ? toLambda + 360 : toLambda;
+      } else {
+        // Spin globe eastward: lambda decreases below current toLambda
+        targetLambda = toLambda > fromLambda ? toLambda - 360 : toLambda;
+      }
+      const midLambda = (fromLambda + targetLambda) / 2;
+      const midPhi    = (fromCfg.rotate[1] + toCfg.rotate[1]) / 2;
+      kfs = [
+        { rotate: [fromLambda,   fromCfg.rotate[1], 0] as [number, number, number], scale: fromCfg.scale, t: 0    },
+        { rotate: [midLambda,    midPhi,            0] as [number, number, number], scale: 225,           t: 0.42 },
+        { rotate: [targetLambda, toCfg.rotate[1],   0] as [number, number, number], scale: toCfg.scale,  t: 1    },
+      ];
+    } else {
+      kfs = [
+        { rotate: fromCfg.rotate, scale: fromCfg.scale, t: 0 },
+        { rotate: toCfg.rotate,   scale: toCfg.scale,   t: 1 },
+      ];
+    }
+
+    setActiveId(stopId);
+    setRevealedIdx(prev => Math.max(prev, toIdx));
+
+    const DURATION = viaPacific ? 3500 : 2000;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const raw = Math.min((now - start) / DURATION, 1);
+      let rot = kfs[0].rotate;
+      let sc  = kfs[0].scale;
+      for (let i = 0; i < kfs.length - 1; i++) {
+        const k0 = kfs[i], k1 = kfs[i + 1];
+        if (raw <= k1.t) {
+          const e = easeInOut((raw - k0.t) / (k1.t - k0.t));
+          rot = [
+            k0.rotate[0] + (k1.rotate[0] - k0.rotate[0]) * e,
+            k0.rotate[1] + (k1.rotate[1] - k0.rotate[1]) * e,
+            0,
+          ] as [number, number, number];
+          sc = k0.scale + (k1.scale - k0.scale) * e;
+          break;
+        }
+      }
+      // On completion, snap to canonical STOP_VIEW so subsequent animations
+      // start from a normalized lambda (prevents going the long way around)
+      setProjCfg(raw < 1 ? { rotate: rot, scale: sc } : STOP_VIEWS[stopId]);
+      setFlightAnim({ fromId: fromStop.id, toId: stopId, flightTime, rawProgress: raw });
+      if (raw < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setFlightAnim(null);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
   };
 
   const displayId     = hoveredId ?? activeId;
@@ -144,26 +252,26 @@ export default function JourneyMap() {
   }));
 
   return (
-    <section id="journey" style={{ padding: "6rem 2rem", maxWidth: "1100px", margin: "0 auto" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        <p className="section-label" style={{ marginBottom: "0.75rem" }}>// data.journey</p>
-        <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
-          How I got here
-        </h2>
-        <p style={{ color: "var(--text-muted)", marginBottom: "3rem", maxWidth: "500px" }}>
-          Six stops. One continuous thread of curiosity.
-        </p>
-      </motion.div>
+    <section id="journey" style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ maxWidth: "1100px", width: "100%", margin: "0 auto", padding: "2.5rem 2rem 1.5rem", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
 
-      <div style={{ display: "grid", gap: "1.25rem" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          style={{ flexShrink: 0, marginBottom: "1rem" }}
+        >
+          <p className="section-label" style={{ marginBottom: "0.4rem" }}>// data.journey</p>
+          <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 700, color: "var(--text)" }}>
+            How I got here
+          </h2>
+        </motion.div>
 
-        {/* ── MAP ─────────────────────────────────────────── */}
-        <div style={{ borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: 0 }}>
+
+          {/* ── MAP ─────────────────────────────────────────── */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
           {/* Header bar */}
           <div style={{
             background: "#0d1b2a",
@@ -173,17 +281,62 @@ export default function JourneyMap() {
             alignItems: "center",
             gap: "0.7rem",
           }}>
-            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#ff5f57", display: "inline-block", boxShadow: "0 0 6px #ff5f5760" }} />
-            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#febc2e", display: "inline-block", boxShadow: "0 0 6px #febc2e60" }} />
-            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#28c840", display: "inline-block", boxShadow: "0 0 6px #28c84060" }} />
-            <span className="mono" style={{ marginLeft: "0.6rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", letterSpacing: "0.03em" }}>
-              journey.map — click a stop to navigate
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#ff5f57", display: "inline-block", boxShadow: "0 0 6px #ff5f5760", flexShrink: 0 }} />
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#febc2e", display: "inline-block", boxShadow: "0 0 6px #febc2e60", flexShrink: 0 }} />
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#28c840", display: "inline-block", boxShadow: "0 0 6px #28c84060", flexShrink: 0 }} />
+            <span className="mono" style={{ marginLeft: "0.6rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", letterSpacing: "0.03em", flexShrink: 0 }}>
+              journey.map
             </span>
+          </div>
+
+          {/* Stop tabs */}
+          <div style={{
+            background: "#0a1520",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            padding: "0.5rem 1rem",
+            display: "flex",
+            gap: "0.35rem",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+          }}>
+            {journeyStops.map((stop, i) => {
+              const isActive   = stop.id === activeId;
+              const isRevealed = i <= revealedIdx;
+              return (
+                <button
+                  key={stop.id}
+                  onClick={() => selectStop(stop.id)}
+                  style={{
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    padding: "0.3rem 0.7rem",
+                    borderRadius: "6px",
+                    border: `1px solid ${isActive ? stop.color + "70" : isRevealed ? stop.color + "28" : "rgba(255,255,255,0.07)"}`,
+                    background: isActive ? `${stop.color}18` : "transparent",
+                    cursor: "pointer",
+                    opacity: isRevealed ? 1 : 0.4,
+                    transition: "all 0.18s",
+                  }}
+                >
+                  <span style={{ fontSize: "0.85rem" }}>{stop.emoji}</span>
+                  <span style={{
+                    fontSize: "0.7rem",
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? stop.color : "rgba(255,255,255,0.45)",
+                    transition: "color 0.18s",
+                  }}>
+                    {stop.name.split(",")[0]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Map canvas */}
           <div
-            style={{ background: "#0c1e30", position: "relative" }}
+            style={{ background: "#0a2035", position: "relative", flex: 1, overflow: "hidden", minHeight: 0 }}
             onMouseMove={handleMapMouseMove}
             onMouseLeave={() => { setMapCoords(null); setHoveredCountry(null); }}
           >
@@ -219,7 +372,7 @@ export default function JourneyMap() {
               }}
             >›</button>
 
-            {/* Stop weather + distance overlay (top-right, on marker hover) */}
+            {/* Stop weather + distance overlay */}
             <AnimatePresence>
               {hoveredId && (() => {
                 const hs = journeyStops.find(s => s.id === hoveredId)!;
@@ -305,30 +458,61 @@ export default function JourneyMap() {
               )}
             </AnimatePresence>
 
-            <div style={{ opacity: mapOpacity, transition: "opacity 0.22s ease" }}>
+            {/* Flight time badge */}
+            <AnimatePresence>
+              {flightAnim && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  style={{
+                    position: "absolute", top: "50%", left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 20, pointerEvents: "none",
+                    background: "rgba(8,14,6,0.92)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    borderRadius: "10px",
+                    padding: "0.5rem 1.1rem",
+                    backdropFilter: "blur(8px)",
+                    display: "flex", alignItems: "center", gap: "0.5rem",
+                  }}
+                >
+                  <span style={{ fontSize: "1.1rem" }}>{flightAnim.flightTime.includes("train") ? "🚂" : "✈️"}</span>
+                  <span className="mono" style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>
+                    {flightAnim.flightTime}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div style={{
+              position: "absolute", left: 0, right: 0,
+              top: "50%", transform: "translateY(-50%)",
+              zIndex: 1,
+            }}>
               {loaded && (
                 <ComposableMap
-                  key={mapKey}
-                  projection="geoMercator"
+                  projection="geoOrthographic"
                   width={800}
-                  height={420}
+                  height={440}
                   style={{ width: "100%", height: "auto", display: "block" }}
                   projectionConfig={projCfg}
                 >
                   <defs>
                     <radialGradient id="ocean-grad" cx="50%" cy="40%" r="70%">
-                      <stop offset="0%" stopColor="#1e4060" />
-                      <stop offset="60%" stopColor="#152d45" />
-                      <stop offset="100%" stopColor="#0c1e30" />
+                      <stop offset="0%" stopColor="#1a6090" />
+                      <stop offset="55%" stopColor="#144870" />
+                      <stop offset="100%" stopColor="#0a2035" />
                     </radialGradient>
                     <pattern id="ocean-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="0.6" fill="rgba(100,180,255,0.07)" />
+                      <circle cx="2" cy="2" r="0.6" fill="rgba(120,200,255,0.09)" />
                     </pattern>
                   </defs>
-                  <Sphere id="ocean-base" fill="url(#ocean-grad)" stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />
+                  <Sphere id="ocean-base" fill="url(#ocean-grad)" stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} />
                   <Sphere id="ocean-tex" fill="url(#ocean-dots)" stroke="none" strokeWidth={0} />
-                  <Graticule stroke="rgba(100,180,255,0.07)" strokeWidth={0.5} />
+                  <Graticule stroke="rgba(120,200,255,0.1)" strokeWidth={0.4} />
 
+                  {/* Country fills + borders */}
                   <Geographies geography={GEO_URL}>
                     {({ geographies }) =>
                       geographies.map((geo) => {
@@ -340,13 +524,30 @@ export default function JourneyMap() {
                             onMouseEnter={() => setHoveredCountry(geo.properties.name)}
                             onMouseLeave={() => setHoveredCountry(null)}
                             style={{
-                              default: { fill: isHov ? "#3a6040" : "#2c4a2e", stroke: "#1e3620", strokeWidth: 0.4, outline: "none" },
-                              hover:   { fill: "#3a6040", stroke: "#1e3620", strokeWidth: 0.4, outline: "none" },
-                              pressed: { fill: "#2c4a2e", outline: "none" },
+                              default: { fill: isHov ? "#5a8f62" : "#3d6642", stroke: "#243d27", strokeWidth: 0.5, outline: "none" },
+                              hover:   { fill: "#5a8f62", stroke: "#243d27", strokeWidth: 0.5, outline: "none" },
+                              pressed: { fill: "#3d6642", outline: "none" },
                             }}
                           />
                         );
                       })
+                    }
+                  </Geographies>
+
+                  {/* State / province borders */}
+                  <Geographies geography={STATES_URL}>
+                    {({ geographies }) =>
+                      geographies.map((geo) => (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          style={{
+                            default: { fill: "none", stroke: "rgba(255,255,255,0.1)", strokeWidth: 0.3, outline: "none" },
+                            hover:   { fill: "none", stroke: "rgba(255,255,255,0.1)", strokeWidth: 0.3, outline: "none" },
+                            pressed: { fill: "none", outline: "none" },
+                          }}
+                        />
+                      ))
                     }
                   </Geographies>
 
@@ -380,7 +581,6 @@ export default function JourneyMap() {
                         onMouseEnter={() => setHoveredId(stop.id)}
                         onMouseLeave={() => setHoveredId(null)}
                       >
-                        {/* Glow ring */}
                         <circle
                           r={isFocused ? 19 : 13}
                           fill={`${stop.color}${isRevealed ? "14" : "06"}`}
@@ -388,7 +588,6 @@ export default function JourneyMap() {
                           strokeWidth={1}
                           style={{ cursor: "pointer", transition: "r 0.2s" }}
                         />
-                        {/* Pulse for NYC */}
                         {stop.id === "nyc" && isRevealed && (
                           <motion.circle
                             r={10} fill="none" stroke={stop.color} strokeWidth={1}
@@ -396,7 +595,6 @@ export default function JourneyMap() {
                             transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
                           />
                         )}
-                        {/* Emoji */}
                         <text
                           textAnchor="middle"
                           dominantBaseline="central"
@@ -411,7 +609,6 @@ export default function JourneyMap() {
                         >
                           {stop.emoji}
                         </text>
-                        {/* Label */}
                         <text
                           textAnchor={labelAnchor}
                           x={labelDx} y={labelDy}
@@ -429,6 +626,37 @@ export default function JourneyMap() {
                       </Marker>
                     );
                   })}
+
+                  {/* Flight arc + plane */}
+                  {flightAnim && (() => {
+                    const fromStop = journeyStops.find(s => s.id === flightAnim.fromId)!;
+                    const toStop   = journeyStops.find(s => s.id === flightAnim.toId)!;
+                    const t        = easeInOut(flightAnim.rawProgress);
+                    const adjLon   = wrapLon(fromStop.coordinates[0], toStop.coordinates[0]);
+                    const rawLon   = fromStop.coordinates[0] + (adjLon - fromStop.coordinates[0]) * t;
+                    const planeLon = normalizeLon(rawLon);
+                    const planeLat = fromStop.coordinates[1] + (toStop.coordinates[1] - fromStop.coordinates[1]) * t;
+                    const planeCoords: [number, number] = [planeLon, planeLat];
+                    return (
+                      <>
+                        <Line
+                          from={fromStop.coordinates}
+                          to={planeCoords}
+                          stroke="rgba(255,255,255,0.35)"
+                          strokeWidth={1.2}
+                          strokeDasharray="4 3"
+                          strokeLinecap="round"
+                        />
+                        <Marker coordinates={planeCoords}>
+                          <text
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            style={{ fontSize: "14px", userSelect: "none" }}
+                          >✈️</text>
+                        </Marker>
+                      </>
+                    );
+                  })()}
                 </ComposableMap>
               )}
             </div>
@@ -446,88 +674,53 @@ export default function JourneyMap() {
             style={{
               background: `${displayStop.color}0e`,
               border: `1px solid ${displayStop.color}40`,
-              borderRadius: "12px",
-              padding: "1.5rem",
+              borderRadius: "10px",
+              padding: "0.75rem 1.1rem",
               display: "grid",
               gridTemplateColumns: "1fr auto",
-              gap: "1.5rem",
-              alignItems: "start",
+              gap: "1rem",
+              alignItems: "center",
             }}
           >
-            {/* Left: identity + description */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                <span style={{ fontSize: "2rem" }}>{displayStop.emoji}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
+                <span style={{ fontSize: "1.4rem" }}>{displayStop.emoji}</span>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "var(--text)" }}>{displayStop.name}</div>
-                  <div className="mono" style={{ fontSize: "0.72rem", color: displayStop.color, marginTop: "0.1rem" }}>
-                    {displayStop.period}  ·  stop {journeyStops.indexOf(displayStop) + 1} of {journeyStops.length}
+                  <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)" }}>{displayStop.name}</div>
+                  <div className="mono" style={{ fontSize: "0.63rem", color: displayStop.color, marginTop: "0.05rem" }}>
+                    {displayStop.period}
                   </div>
                 </div>
               </div>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.75, margin: 0 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", lineHeight: 1.55, margin: 0 }}>
                 {displayStop.detail}
               </p>
             </div>
 
-            {/* Right: weather + distance */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", alignItems: "flex-end", flexShrink: 0 }}>
-              {w ? (
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "2.2rem", lineHeight: 1 }}>{w.icon}</div>
-                  <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--text)", marginTop: "0.3rem" }}>{w.temp}</div>
-                  <div className="mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>{w.desc}</div>
-                </div>
-              ) : (
-                <div className="mono" style={{ fontSize: "0.65rem", color: "var(--text-dim)", opacity: 0.5 }}>fetching weather…</div>
-              )}
-              {dist && (
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "1.3rem", fontWeight: 700, color: displayStop.color }}>{dist}</div>
-                  <div className="mono" style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>miles from NYC</div>
-                </div>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                {w ? (
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "1.3rem", lineHeight: 1 }}>{w.icon}</div>
+                    <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text)", marginTop: "0.15rem" }}>{w.temp}</div>
+                    <div className="mono" style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{w.desc}</div>
+                  </div>
+                ) : (
+                  <div className="mono" style={{ fontSize: "0.58rem", color: "var(--text-dim)", opacity: 0.5 }}>fetching…</div>
+                )}
+                {dist && (
+                  <div style={{ textAlign: "right", borderLeft: `1px solid ${displayStop.color}30`, paddingLeft: "0.85rem" }}>
+                    <div style={{ fontSize: "0.95rem", fontWeight: 700, color: displayStop.color }}>{dist} mi</div>
+                    <div className="mono" style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>from NYC</div>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* ── STOP SELECTORS ──────────────────────────────── */}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {journeyStops.map((stop, i) => {
-            const isActive   = stop.id === activeId;
-            const isRevealed = i <= revealedIdx;
-            return (
-              <motion.button
-                key={stop.id}
-                onClick={() => selectStop(stop.id)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                style={{
-                  background: isActive ? `${stop.color}20` : "var(--bg-card)",
-                  border: `1px solid ${isActive ? stop.color + "80" : isRevealed ? stop.color + "35" : "var(--border)"}`,
-                  borderRadius: "8px",
-                  padding: "0.55rem 1rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  transition: "all 0.2s",
-                  opacity: isRevealed ? 1 : 0.45,
-                }}
-              >
-                <span style={{ fontSize: "1rem" }}>{stop.emoji}</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: isActive ? 600 : 400, color: isActive ? stop.color : "var(--text-muted)" }}>
-                  {stop.name.split(",")[0]}
-                </span>
-                {!isRevealed && (
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>›</span>
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
-
-      </div>
+        </div>{/* flex column: map + info */}
+      </div>{/* inner max-width wrapper */}
     </section>
   );
 }

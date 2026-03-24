@@ -59,7 +59,7 @@ export const journeyStops = [
     id: "dc",
     name: "Washington D.C.",
     label: "Fannie Mae",
-    detail: "First real job. Joined a Master Data Management team as a Data Engineer. Built pipelines that actually mattered.",
+    detail: "Understood data at scale — worked with Fannie Mae's $3 trillion single-family mortgage portfolio. Built pipelines processing millions of records daily and learned what it means to engineer data that actually moves markets.",
     coordinates: [-77.0369, 38.9072] as [number, number],
     emoji: "🏛️",
     period: "2023 – 2025",
@@ -72,7 +72,7 @@ export const journeyStops = [
     id: "nyc",
     name: "New York City",
     label: "My new home!",
-    detail: "I <3 NY! Working at a NYC-focused PE firm while falling deeper in love with this city every day.",
+    detail: "New York is home. I am on the data strategy team at a CRE private equity firm, using my data engineering and analysis skills to source deals and inform investment decisions.",
     coordinates: [-74.006, 40.7128] as [number, number],
     emoji: "🗽",
     period: "2025 – Present",
@@ -95,7 +95,10 @@ export const skills = [
   { name: "HubSpot", category: "tools", level: 80 },
   { name: "REST APIs", category: "tools", level: 85 },
   { name: "Git", category: "tools", level: 90 },
-  { name: "AI / LLMs", category: "ai", level: 80 },
+  { name: "Claude Code", category: "ai", level: 85 },
+  { name: "Fine Tuning", category: "ai", level: 70 },
+  { name: "LSTM", category: "ai", level: 80 },
+  { name: "RAG", category: "ai", level: 80 },
 ]
 
 export const skillCategories: Record<string, { label: string; color: string }> = {
@@ -204,13 +207,13 @@ export const publications = [
   },
   {
     title: "NYC Distressed Real Estate Markets & Rent-Stabilized Asset Performance",
-    authors: "Megha Bairwal et al., Maverick Real Estate Partners",
+    authors: "Maverick Real Estate Partners",
     venue: "White Paper",
     location: "New York, NY",
     year: "2025",
     type: "White Paper",
     description: "Co-authored analysis of distressed commercial real estate conditions in New York City, with a focus on rent-stabilized multifamily asset performance, market dynamics, and investment implications.",
-    link: null,
+    link: "https://insights.maverickrep.com/",
     color: "#C4956A",
   },
 ]

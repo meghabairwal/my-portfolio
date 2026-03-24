@@ -10,6 +10,7 @@ const links = [
   { label: "experience", href: "#experience" },
   { label: "publications", href: "#publications" },
   { label: "projects", href: "#projects" },
+  { label: "live data", href: "#nyc-viz" },
   { label: "contact", href: "#contact" },
 ];
 
