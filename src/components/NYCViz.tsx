@@ -37,7 +37,7 @@ const CATEGORIES: Record<string, { color: string; types: string[] }> = {
     types: ["Street Condition","DEP Street Condition","Street Light Condition","Street Sign - Damaged","Street Sign - Dangling","Street Sign - Missing","Sidewalk Condition","DEP Sidewalk Condition","Root/Sewer/Sidewalk Condition","Traffic Signal Condition","Highway Condition","DEP Highway Condition","Bridge Condition","DEP Bridge Condition","Tunnel Condition","Curb Condition","Water Drainage","Water Maintenance","Sewer","Sewer Maintenance","Standing Water","Snow","Snow or Ice","Snow Removal"],
   },
   "Parks & Nature": {
-    color: "#34d399",
+    color: "#22d3ee",
     types: ["Damaged Tree","Dead/Dying Tree","Overgrown Tree/Branches","Illegal Tree Damage","Uprooted Stump","New Tree Request","Animal in a Park","Violation of Park Rules","Bike/Roller/Skate","Bike/Roller/Skate Chronic","Mosquitoes","Poison Ivy"],
   },
   "Other": {
@@ -603,11 +603,21 @@ export default function NYCViz() {
         >
           {/* Category pie */}
           <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by category</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
-              {catPieData[0]?.name.toLowerCase()} leads
-            </p>
-            <ResponsiveContainer width="100%" height={180}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+              <div>
+                <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.2rem" }}>by category</p>
+                <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{catPieData[0]?.name.toLowerCase()} leads</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.22rem", alignItems: "flex-end" }}>
+                {catPieData.slice(0, 6).map(d => (
+                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span className="mono" style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.55)" }}>{d.name}</span>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -623,11 +633,21 @@ export default function NYCViz() {
 
           {/* Borough pie */}
           <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by borough</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
-              {boroPieData[0]?.name} loudest
-            </p>
-            <ResponsiveContainer width="100%" height={180}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+              <div>
+                <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.2rem" }}>by borough</p>
+                <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{boroPieData[0]?.name} loudest</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.22rem", alignItems: "flex-end" }}>
+                {boroPieData.map(d => (
+                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span className="mono" style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.55)" }}>{d.name}</span>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
