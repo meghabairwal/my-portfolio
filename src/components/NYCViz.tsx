@@ -332,8 +332,12 @@ export default function NYCViz() {
   }, []);
 
   // ── Legend toggle ─────────────────────────────────────────────────────────
-  const toggleType = useCallback((type: string) => {
+  const toggleType = useCallback((type: string, allCats: string[]) => {
     setHidden(prev => {
+      // if everything is hidden, clicking one solos it (show only that one)
+      if (prev.size >= allCats.length) {
+        return new Set(allCats.filter(c => c !== type));
+      }
       const next = new Set(prev);
       if (next.has(type)) next.delete(type); else next.add(type);
       return next;
@@ -341,13 +345,24 @@ export default function NYCViz() {
     setTooltip(null);
   }, []);
 
-  const allHidden = useCallback(() => {
-    setHidden(new Set(Object.keys(CATEGORIES)));
+  const allHidden = useCallback((allCats: string[]) => {
+    setHidden(new Set(allCats));
     setTooltip(null);
   }, []);
 
   const noneHidden = useCallback(() => {
     setHidden(new Set());
+  }, []);
+
+  const toggleHour = useCallback((cat: string, allCats: string[]) => {
+    setHiddenHour(prev => {
+      if (prev.size >= allCats.length) {
+        return new Set(allCats.filter(c => c !== cat));
+      }
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      return next;
+    });
   }, []);
 
   const pan = useCallback((dx: number, dy: number) => {
@@ -537,10 +552,10 @@ export default function NYCViz() {
             }}>
               <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.25rem" }}>
                 <button onClick={noneHidden} style={{ fontSize: "0.55rem", fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.15)", background: allVisible ? "rgba(255,255,255,0.12)" : "transparent", color: allVisible ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)", cursor: "pointer" }}>show all</button>
-                <button onClick={allHidden} style={{ fontSize: "0.55rem", fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.15)", background: !allVisible ? "rgba(255,255,255,0.12)" : "transparent", color: !allVisible ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)", cursor: "pointer" }}>hide all</button>
+                <button onClick={() => allHidden(catCounts.map(c => c.name))} style={{ fontSize: "0.55rem", fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.15)", background: !allVisible ? "rgba(255,255,255,0.12)" : "transparent", color: !allVisible ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)", cursor: "pointer" }}>deselect all</button>
               </div>
-              {catCounts.filter(({ name }) => !hidden.has(name)).map(({ name, color, count }) => (
-                <div key={name} onClick={() => toggleType(name)} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", userSelect: "none" }}>
+              {catCounts.map(({ name, color, count }) => (
+                <div key={name} onClick={() => toggleType(name, catCounts.map(c => c.name))} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", userSelect: "none", opacity: hidden.has(name) ? 0.3 : 1, transition: "opacity 0.15s" }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
                   <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.75)", fontFamily: "var(--font-mono)" }}>{name}</span>
                   <span style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-mono)", marginLeft: "auto", paddingLeft: "0.5rem" }}>{count}</span>
@@ -675,16 +690,19 @@ export default function NYCViz() {
                 <p style={{ fontSize: "1rem", fontWeight: 700, color: "#38bdf8" }}>peaks at {peakH?.hour}</p>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.22rem", alignItems: "flex-end" }}>
-                {activeCats.map(cat => {
-                  const isHidden = hiddenHour.has(cat);
-                  return (
-                    <div key={cat} onClick={() => setHiddenHour(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; })}
-                      style={{ display: "flex", alignItems: "center", gap: "0.3rem", cursor: "pointer", opacity: isHidden ? 0.3 : 1, transition: "opacity 0.15s" }}>
-                      <span className="mono" style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.55)" }}>{cat}</span>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORIES[cat]?.color, flexShrink: 0 }} />
-                    </div>
-                  );
-                })}
+                <button
+                  onClick={() => hiddenHour.size >= activeCats.length ? setHiddenHour(new Set()) : setHiddenHour(new Set(activeCats))}
+                  style={{ fontSize: "0.5rem", fontFamily: "var(--font-mono)", padding: "1px 5px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer", marginBottom: "0.1rem" }}
+                >
+                  {hiddenHour.size >= activeCats.length ? "show all" : "deselect all"}
+                </button>
+                {activeCats.map(cat => (
+                  <div key={cat} onClick={() => toggleHour(cat, activeCats)}
+                    style={{ display: "flex", alignItems: "center", gap: "0.3rem", cursor: "pointer", opacity: hiddenHour.has(cat) ? 0.3 : 1, transition: "opacity 0.15s" }}>
+                    <span className="mono" style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.55)" }}>{cat}</span>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORIES[cat]?.color, flexShrink: 0 }} />
+                  </div>
+                ))}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={170}>
