@@ -151,6 +151,7 @@ export default function NYCViz() {
   const [tooltip, setTooltip]         = useState<{ x: number; y: number; c: Complaint } | null>(null);
   const [hidden, setHidden]           = useState<Set<string>>(new Set());
   const [grabbing, setGrabbing]       = useState(false);
+  const [hiddenHour, setHiddenHour]   = useState<Set<string>>(new Set());
 
   useEffect(() => { transformRef.current = transform; }, [transform]);
   useEffect(() => { complaintsRef.current = complaints; }, [complaints]);
@@ -668,10 +669,24 @@ export default function NYCViz() {
 
           {/* Hour area chart */}
           <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>complaints by hour</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#38bdf8", marginBottom: "0.75rem" }}>
-              peaks at {peakH?.hour}
-            </p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+              <div>
+                <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.2rem" }}>complaints by hour</p>
+                <p style={{ fontSize: "1rem", fontWeight: 700, color: "#38bdf8" }}>peaks at {peakH?.hour}</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.22rem", alignItems: "flex-end" }}>
+                {activeCats.map(cat => {
+                  const isHidden = hiddenHour.has(cat);
+                  return (
+                    <div key={cat} onClick={() => setHiddenHour(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; })}
+                      style={{ display: "flex", alignItems: "center", gap: "0.3rem", cursor: "pointer", opacity: isHidden ? 0.3 : 1, transition: "opacity 0.15s" }}>
+                      <span className="mono" style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.55)" }}>{cat}</span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORIES[cat]?.color, flexShrink: 0 }} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height={170}>
               <AreaChart data={hourData} margin={{ top: 4, right: 12, left: 8, bottom: 24 }}>
                 <defs>
@@ -694,7 +709,7 @@ export default function NYCViz() {
                   formatter={(v, name) => [`${Number(v).toLocaleString()}`, name as string]}
                   labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 2 }}
                 />
-                {activeCats.map(cat => (
+                {activeCats.filter(cat => !hiddenHour.has(cat)).map(cat => (
                   <Area key={cat} type="monotone" dataKey={cat} stackId="1"
                     stroke={CATEGORIES[cat]?.color} strokeWidth={1}
                     fill={`url(#grad-${cat.replace(/\s|&/g, "")})`}
