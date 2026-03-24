@@ -607,9 +607,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {catPieData[0]?.name.toLowerCase()} leads
             </p>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={130}>
               <PieChart>
-                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={36} outerRadius={60} paddingAngle={2} stroke="none">
+                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={0} outerRadius={50} paddingAngle={2} stroke="none">
                   {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -636,9 +636,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {boroPieData[0]?.name} loudest
             </p>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={130}>
               <PieChart>
-                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={36} outerRadius={60} paddingAngle={2} stroke="none">
+                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={0} outerRadius={50} paddingAngle={2} stroke="none">
                   {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -673,11 +673,11 @@ export default function NYCViz() {
                     <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="hour" tick={chartLabel} tickLine={false} axisLine={false} interval={2}
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis dataKey="hour" tick={chartLabel} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,0.15)" }} interval={2}
                   label={{ value: "hour of day", position: "insideBottom", offset: -12, style: { fontSize: "0.6rem", fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.3)" } }}
                 />
-                <YAxis tick={chartLabel} tickLine={false} axisLine={false}
+                <YAxis tick={chartLabel} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,0.15)" }}
                   label={{ value: "complaints", angle: -90, position: "insideLeft", offset: 16, style: { fontSize: "0.6rem", fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.3)" } }}
                 />
                 <ReTooltip
