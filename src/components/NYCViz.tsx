@@ -411,8 +411,14 @@ export default function NYCViz() {
         <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
           NYC right now
         </h2>
-        <p style={{ color: "var(--text-muted)", maxWidth: "560px" }}>
+        <p style={{ color: "var(--text-muted)", maxWidth: "640px", marginBottom: "0.75rem" }}>
           {complaints.length > 0 ? complaints.length.toLocaleString() : "10,000"} most recent 311 complaints pulled live from NYC Open Data. Every dot is a real call to the city.
+        </p>
+        <p style={{ color: "var(--text-muted)", maxWidth: "640px", marginBottom: "0.5rem", lineHeight: 1.7 }}>
+          New York doesn't just happen — it gets complained about, tracked, and logged in real time. I built this because it's exactly what I do professionally: pipe raw public data into something that tells a story. As someone who moved here and immediately fell in love with the city's chaos and complexity, I find NYC's open datasets endlessly fascinating. The patterns in this map — which neighborhoods complain most, what hour noise spikes, where infrastructure is struggling — are the same kinds of signals I extract from real estate and financial data at work.
+        </p>
+        <p style={{ color: "var(--text-muted)", maxWidth: "640px", fontStyle: "italic" }}>
+          Data isn't abstract to me. It's about understanding the world you actually live in.
         </p>
       </motion.div>
 
