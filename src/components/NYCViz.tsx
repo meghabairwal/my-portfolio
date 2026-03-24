@@ -375,25 +375,30 @@ export default function NYCViz() {
     return acc;
   }, {} as Record<string, number>);
 
-  const hourCounts = complaints.reduce((acc, c) => {
-    const h = new Date(c.created_date).getHours();
-    acc[h] = (acc[h] || 0) + 1;
-    return acc;
-  }, {} as Record<number, number>);
-
   const catPieData  = catCounts.map(({ name, color, count }) => ({ name, value: count, color }));
   const boroPieData = Object.entries(boroughCounts)
     .map(([name, value]) => ({ name: name.charAt(0) + name.slice(1).toLowerCase(), value, color: boroughColors[name] ?? "rgba(255,255,255,0.2)" }))
     .sort((a, b) => b.value - a.value);
-  const hourData = Array.from({ length: 24 }, (_, h) => ({
-    hour: h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`,
-    count: hourCounts[h] || 0,
-  }));
 
-  const dates    = complaints.map(c => new Date(c.created_date).getTime()).filter(Boolean);
-  const spanHrs  = dates.length ? (Math.max(...dates) - Math.min(...dates)) / 3_600_000 : 0;
-  const perHour  = spanHrs > 0 ? Math.round(complaints.length / spanHrs) : null;
-  const peakH    = hourData.reduce((best, d) => d.count > best.count ? d : best, hourData[0]);
+  const activeCats = catCounts.map(c => c.name);
+  const hourData = Array.from({ length: 24 }, (_, h) => {
+    const label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+    const row: Record<string, string | number> = { hour: label };
+    activeCats.forEach(cat => { row[cat] = 0; });
+    return row;
+  });
+  complaints.forEach(c => {
+    const h = new Date(c.created_date).getHours();
+    const cat = getTypeCat(c.complaint_type);
+    if (hourData[h] && cat in hourData[h]) (hourData[h][cat] as number)++;
+  });
+
+  const dates = complaints.map(c => new Date(c.created_date).getTime()).filter(Boolean);
+  const peakH = hourData.reduce((best, d) => {
+    const total = activeCats.reduce((s, cat) => s + (d[cat] as number), 0);
+    const bestTotal = activeCats.reduce((s, cat) => s + (best[cat] as number), 0);
+    return total > bestTotal ? d : best;
+  }, hourData[0]);
 
   const chartCard = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "0.85rem 1rem 0.75rem" };
   const chartLabel = { fontSize: "0.7rem" as const, fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.4)" };
@@ -418,7 +423,7 @@ export default function NYCViz() {
           New York doesn't just happen. It gets complained about, tracked, and logged in real time. I built this because it's exactly what I do professionally: pipe raw public data into something that tells a story. As someone who moved here and immediately fell in love with the city's chaos and complexity, I find NYC's open datasets endlessly fascinating. The patterns in this map (which neighborhoods complain most, what hour noise spikes, where infrastructure is struggling) are the same kinds of signals I extract from real estate and financial data at work.
         </p>
         <p style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
-          Data isn't abstract to me. It's about understanding the world you actually live in.
+          I make data less abstract and more actionable. I truly see it as a tool to get to know, understand, and help improve the world around me.
         </p>
       </motion.div>
 
@@ -617,7 +622,7 @@ export default function NYCViz() {
                 ))}
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -647,7 +652,7 @@ export default function NYCViz() {
                 ))}
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -670,10 +675,12 @@ export default function NYCViz() {
             <ResponsiveContainer width="100%" height={170}>
               <AreaChart data={hourData} margin={{ top: 4, right: 12, left: 8, bottom: 24 }}>
                 <defs>
-                  <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.02} />
-                  </linearGradient>
+                  {activeCats.map(cat => (
+                    <linearGradient key={cat} id={`grad-${cat.replace(/\s|&/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CATEGORIES[cat]?.color} stopOpacity={0.5} />
+                      <stop offset="95%" stopColor={CATEGORIES[cat]?.color} stopOpacity={0.05} />
+                    </linearGradient>
+                  ))}
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
                 <XAxis dataKey="hour" tick={chartLabel} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,0.15)" }} interval={2}
@@ -684,11 +691,16 @@ export default function NYCViz() {
                 />
                 <ReTooltip
                   contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
-                  formatter={(v) => [`${Number(v).toLocaleString()} complaints`, ""]}
-                  labelFormatter={(l) => `${l}`}
+                  formatter={(v, name) => [`${Number(v).toLocaleString()}`, name as string]}
                   labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 2 }}
                 />
-                <Area type="monotone" dataKey="count" stroke="#38bdf8" strokeWidth={2} fill="url(#hourGrad)" dot={false} activeDot={{ r: 4, fill: "#38bdf8", strokeWidth: 0 }} />
+                {activeCats.map(cat => (
+                  <Area key={cat} type="monotone" dataKey={cat} stackId="1"
+                    stroke={CATEGORIES[cat]?.color} strokeWidth={1}
+                    fill={`url(#grad-${cat.replace(/\s|&/g, "")})`}
+                    dot={false} activeDot={{ r: 3, strokeWidth: 0 }}
+                  />
+                ))}
               </AreaChart>
             </ResponsiveContainer>
           </div>
