@@ -13,31 +13,31 @@ const H = Math.round(W * (_mMax - _mMin) / ((NYC_BOUNDS.maxLon - NYC_BOUNDS.minL
 
 const CATEGORIES: Record<string, { color: string; types: string[] }> = {
   "Noise": {
-    color: "#7CB988",
+    color: "#4ade80",
     types: ["Noise","Noise - Commercial","Noise - Helicopter","Noise - House of Worship","Noise - Park","Noise - Residential","Noise - Street/Sidewalk","Noise - Vehicle","Collection Truck Noise"],
   },
   "Housing": {
-    color: "#E8624A",
+    color: "#f97316",
     types: ["HEAT/HOT WATER","Heat/Hot Water","Non-Residential Heat","PLUMBING","Plumbing","PAINT/PLASTER","Paint/Plaster","Peeling Paint","Mold","MOLD","Boiler","Boilers","Door/Window","DOOR/WINDOW","Flooring/Stairs","FLOORING/STAIRS","Window Guard","Water Leak","WATER LEAK","Indoor Sewage","Lead","Building Condition","Elevator","ELEVATOR","Appliance","APPLIANCE","Outside Building","OUTSIDE BUILDING","General Construction/Plumbing","Facade Insp Safety Pgm","Facades","Unstable Building","Indoor Air Quality"],
   },
   "Sanitation": {
-    color: "#C4956A",
+    color: "#fbbf24",
     types: ["Dirty Condition","Dirty Conditions","Sanitation Condition","Illegal Dumping","Overflowing Litter Baskets","Overflowing Recycling Baskets","Missed Collection","Missed Collection (All Materials)","Sweeping/Missed","Sweeping/Inadequate","Sweeping/Missed-Inadequate","Litter Basket Complaint","Dead Animal","DSNY Spillage","Recycling Enforcement","Rodent","Mosquitoes","Unsanitary Condition","UNSANITARY CONDITION","Hazardous Materials","Oil or Gas Spill","Industrial Waste","Electronics Waste","Commercial Disposal Complaint","Residential Disposal Complaint","Dumpster Complaint","Asbestos","ASBESTOS"],
   },
   "Public Safety": {
-    color: "#F0C674",
+    color: "#f43f5e",
     types: ["Drug Activity","Graffiti","Encampment","Homeless Encampment","Homeless Person Assistance","Homeless Street Condition","Panhandling","Drinking","Urinating in Public","Disorderly Youth","Squeegee","Illegal Fireworks","Non-Emergency Police Matter","Quality of Life","Smoking","Smoking or Vaping","Illegal Posting","Illegal Animal Kept as Pet","Animal-Abuse","Unleashed Dog","Unlicensed Dog","Unsanitary Animal Facility","Unsanitary Pigeon Condition","Harboring Bees/Wasps","Vacant Lot"],
   },
   "Parking": {
-    color: "#6B9BAF",
+    color: "#38bdf8",
     types: ["Illegal Parking","Blocked Driveway","Abandoned Vehicle","Derelict Vehicles","Abandoned Bike","Derelict Bicycle","Broken Parking Meter","For Hire Vehicle Complaint","Taxi Complaint","Green Taxi Complaint","Traffic"],
   },
   "Infrastructure": {
-    color: "#A78BFA",
+    color: "#c084fc",
     types: ["Street Condition","DEP Street Condition","Street Light Condition","Street Sign - Damaged","Street Sign - Dangling","Street Sign - Missing","Sidewalk Condition","DEP Sidewalk Condition","Root/Sewer/Sidewalk Condition","Traffic Signal Condition","Highway Condition","DEP Highway Condition","Bridge Condition","DEP Bridge Condition","Tunnel Condition","Curb Condition","Water Drainage","Water Maintenance","Sewer","Sewer Maintenance","Standing Water","Snow","Snow or Ice","Snow Removal"],
   },
   "Parks & Nature": {
-    color: "#98D4A3",
+    color: "#34d399",
     types: ["Damaged Tree","Dead/Dying Tree","Overgrown Tree/Branches","Illegal Tree Damage","Uprooted Stump","New Tree Request","Animal in a Park","Violation of Park Rules","Bike/Roller/Skate","Bike/Roller/Skate Chronic","Mosquitoes","Poison Ivy"],
   },
   "Other": {
@@ -366,8 +366,8 @@ export default function NYCViz() {
 
   // ── Chart data ─────────────────────────────────────────────────────────────
   const boroughColors: Record<string, string> = {
-    "BRONX": "#A78BFA", "BROOKLYN": "#7CB988",
-    "MANHATTAN": "#E8624A", "QUEENS": "#F0C674", "STATEN ISLAND": "#6B9BAF",
+    "BRONX": "#c084fc", "BROOKLYN": "#4ade80",
+    "MANHATTAN": "#f97316", "QUEENS": "#fbbf24", "STATEN ISLAND": "#38bdf8",
   };
 
   const boroughCounts = complaints.reduce((acc, c) => {
@@ -411,113 +411,16 @@ export default function NYCViz() {
         <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
           NYC right now
         </h2>
-        <p style={{ color: "var(--text-muted)", maxWidth: "640px", marginBottom: "0.75rem" }}>
+        <p style={{ color: "var(--text-muted)", marginBottom: "0.75rem" }}>
           {complaints.length > 0 ? complaints.length.toLocaleString() : "10,000"} most recent 311 complaints pulled live from NYC Open Data. Every dot is a real call to the city.
         </p>
-        <p style={{ color: "var(--text-muted)", maxWidth: "640px", marginBottom: "0.5rem", lineHeight: 1.7 }}>
+        <p style={{ color: "var(--text-muted)", marginBottom: "0.5rem", lineHeight: 1.7 }}>
           New York doesn't just happen — it gets complained about, tracked, and logged in real time. I built this because it's exactly what I do professionally: pipe raw public data into something that tells a story. As someone who moved here and immediately fell in love with the city's chaos and complexity, I find NYC's open datasets endlessly fascinating. The patterns in this map — which neighborhoods complain most, what hour noise spikes, where infrastructure is struggling — are the same kinds of signals I extract from real estate and financial data at work.
         </p>
-        <p style={{ color: "var(--text-muted)", maxWidth: "640px", fontStyle: "italic" }}>
+        <p style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
           Data isn't abstract to me. It's about understanding the world you actually live in.
         </p>
       </motion.div>
-
-      {/* ── Charts row ── */}
-      {complaints.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr", gap: "1rem", marginBottom: "1.25rem" }}
-        >
-          {/* Category pie */}
-          <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by category</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.75rem" }}>
-              {catPieData[0]?.name.toLowerCase()} leads
-            </p>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
-                  {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                </Pie>
-                <ReTooltip
-                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
-                  formatter={(v, name) => [`${Number(v).toLocaleString()} (${Math.round(Number(v) / complaints.length * 100)}%)`, name as string]}
-                  labelStyle={{ display: "none" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
-              {catPieData.slice(0, 5).map(d => (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.6)", flex: 1 }}>{d.name}</span>
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.3)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Borough pie */}
-          <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by borough</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.75rem" }}>
-              {boroPieData[0]?.name} loudest
-            </p>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
-                  {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                </Pie>
-                <ReTooltip
-                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
-                  formatter={(v, name) => [`${Number(v).toLocaleString()} (${Math.round(Number(v) / complaints.length * 100)}%)`, name as string]}
-                  labelStyle={{ display: "none" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
-              {boroPieData.map(d => (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.6)", flex: 1 }}>{d.name}</span>
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.3)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Hour area chart */}
-          <div style={chartCard}>
-            <p className="mono" style={{ fontSize: "0.6rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>complaints by hour</p>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.75rem" }}>
-              peaks at {peakH?.hour}
-            </p>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={hourData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7CB988" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#7CB988" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="hour" tick={chartLabel} tickLine={false} axisLine={false} interval={2} />
-                <YAxis tick={chartLabel} tickLine={false} axisLine={false} />
-                <ReTooltip
-                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
-                  formatter={(v) => [`${Number(v).toLocaleString()} complaints`, ""]}
-                  labelFormatter={(l) => `${l}`}
-                  labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 2 }}
-                />
-                <Area type="monotone" dataKey="count" stroke="#7CB988" strokeWidth={2} fill="url(#hourGrad)" dot={false} activeDot={{ r: 4, fill: "#7CB988", strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-      )}
 
       <motion.div
         ref={containerRef}
@@ -688,6 +591,107 @@ export default function NYCViz() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* ── Charts row ── */}
+      {complaints.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr", gap: "1rem", marginTop: "1.25rem" }}
+        >
+          {/* Category pie */}
+          <div style={chartCard}>
+            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by category</p>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
+              {catPieData[0]?.name.toLowerCase()} leads
+            </p>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
+                  {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <ReTooltip
+                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
+                  formatter={(v, name) => [`${Number(v).toLocaleString()} (${Math.round(Number(v) / complaints.length * 100)}%)`, name as string]}
+                  labelStyle={{ display: "none" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
+              {catPieData.slice(0, 5).map(d => (
+                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", flex: 1 }}>{d.name}</span>
+                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Borough pie */}
+          <div style={chartCard}>
+            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>by borough</p>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
+              {boroPieData[0]?.name} loudest
+            </p>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
+                  {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <ReTooltip
+                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
+                  formatter={(v, name) => [`${Number(v).toLocaleString()} (${Math.round(Number(v) / complaints.length * 100)}%)`, name as string]}
+                  labelStyle={{ display: "none" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
+              {boroPieData.map(d => (
+                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", flex: 1 }}>{d.name}</span>
+                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Hour area chart */}
+          <div style={chartCard}>
+            <p className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.25rem" }}>complaints by hour</p>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#38bdf8", marginBottom: "0.75rem" }}>
+              peaks at {peakH?.hour}
+            </p>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={hourData} margin={{ top: 4, right: 12, left: 8, bottom: 24 }}>
+                <defs>
+                  <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="hour" tick={chartLabel} tickLine={false} axisLine={false} interval={2}
+                  label={{ value: "hour of day", position: "insideBottom", offset: -12, style: { fontSize: "0.6rem", fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.3)" } }}
+                />
+                <YAxis tick={chartLabel} tickLine={false} axisLine={false}
+                  label={{ value: "complaints", angle: -90, position: "insideLeft", offset: 16, style: { fontSize: "0.6rem", fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.3)" } }}
+                />
+                <ReTooltip
+                  contentStyle={{ background: "rgba(6,12,8,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}
+                  formatter={(v) => [`${Number(v).toLocaleString()} complaints`, ""]}
+                  labelFormatter={(l) => `${l}`}
+                  labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 2 }}
+                />
+                <Area type="monotone" dataKey="count" stroke="#38bdf8" strokeWidth={2} fill="url(#hourGrad)" dot={false} activeDot={{ r: 4, fill: "#38bdf8", strokeWidth: 0 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      )}
     </section>
   );
 }
