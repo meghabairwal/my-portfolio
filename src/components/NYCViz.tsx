@@ -607,9 +607,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {catPieData[0]?.name.toLowerCase()} leads
             </p>
-            <ResponsiveContainer width="100%" height={130}>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius={0} outerRadius={50} paddingAngle={2} stroke="none">
+                <Pie data={catPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {catPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -619,15 +619,6 @@ export default function NYCViz() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
-              {catPieData.slice(0, 5).map(d => (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", flex: 1 }}>{d.name}</span>
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Borough pie */}
@@ -636,9 +627,9 @@ export default function NYCViz() {
             <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
               {boroPieData[0]?.name} loudest
             </p>
-            <ResponsiveContainer width="100%" height={130}>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius={0} outerRadius={50} paddingAngle={2} stroke="none">
+                <Pie data={boroPieData} dataKey="value" cx="50%" cy="50%" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
                   {boroPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
                 <ReTooltip
@@ -648,15 +639,6 @@ export default function NYCViz() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.5rem" }}>
-              {boroPieData.map(d => (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", flex: 1 }}>{d.name}</span>
-                  <span className="mono" style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>{Math.round(d.value / complaints.length * 100)}%</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Hour area chart */}
