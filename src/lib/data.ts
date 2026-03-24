@@ -1,7 +1,7 @@
 export const personal = {
   name: "Megha Bairwal",
   title: "Data Strategy Analyst",
-  subtitle: "Data engineer at heart. AI enthusiast. Building with data in NYC real estate.",
+  subtitle: "Data Strategist and Engineer. Turning complex datasets into informed decisions: currently in NYC real estate private equity.",
   email: "meghabairwal@gmail.com",
   linkedin: "https://www.linkedin.com/in/megha-bairwal/",
 }

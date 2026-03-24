@@ -23,7 +23,7 @@ export default function Contact() {
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "1rem" }}>
             Let&apos;s connect
           </h2>
-          <p style={{ color: "var(--text-muted)", maxWidth: "420px", margin: "0 auto 3rem", lineHeight: 1.7 }}>
+          <p style={{ color: "var(--text-muted)", margin: "0 auto 3rem", lineHeight: 1.7, whiteSpace: "nowrap" }}>
             Always happy to talk data, real estate, AI, or anything in between.
           </p>
         </motion.div>
