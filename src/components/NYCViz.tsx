@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const NYC_BOUNDS = { minLon: -74.26, maxLon: -73.69, minLat: 40.60, maxLat: 40.90 };
-const W = 1100;
+const W = 800;
 // H derived so (lon_range_rad / mercY_range) = W/H → tiles are always square, no distortion
 const _mMax = Math.log(Math.tan(Math.PI / 4 + NYC_BOUNDS.maxLat * Math.PI / 360));
 const _mMin = Math.log(Math.tan(Math.PI / 4 + NYC_BOUNDS.minLat * Math.PI / 360));
@@ -399,13 +399,13 @@ export default function NYCViz() {
   const chartLabel = { fontSize: "0.7rem" as const, fontFamily: "var(--font-mono)", fill: "rgba(255,255,255,0.4)" };
 
   return (
-    <section id="nyc-viz" style={{ padding: "6rem 2rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <section id="nyc-viz" style={{ padding: "4rem 2rem", maxWidth: "1200px", margin: "0 auto" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        style={{ marginBottom: "2.5rem" }}
+        style={{ marginBottom: "1.25rem" }}
       >
         <p className="section-label" style={{ marginBottom: "0.75rem" }}>// live_data</p>
         <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
@@ -415,7 +415,7 @@ export default function NYCViz() {
           {complaints.length > 0 ? complaints.length.toLocaleString() : "10,000"} most recent 311 complaints pulled live from NYC Open Data. Every dot is a real call to the city.
         </p>
         <p style={{ color: "var(--text-muted)", marginBottom: "0.5rem", lineHeight: 1.7 }}>
-          New York doesn't just happen — it gets complained about, tracked, and logged in real time. I built this because it's exactly what I do professionally: pipe raw public data into something that tells a story. As someone who moved here and immediately fell in love with the city's chaos and complexity, I find NYC's open datasets endlessly fascinating. The patterns in this map — which neighborhoods complain most, what hour noise spikes, where infrastructure is struggling — are the same kinds of signals I extract from real estate and financial data at work.
+          New York doesn't just happen. It gets complained about, tracked, and logged in real time. I built this because it's exactly what I do professionally: pipe raw public data into something that tells a story. As someone who moved here and immediately fell in love with the city's chaos and complexity, I find NYC's open datasets endlessly fascinating. The patterns in this map (which neighborhoods complain most, what hour noise spikes, where infrastructure is struggling) are the same kinds of signals I extract from real estate and financial data at work.
         </p>
         <p style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
           Data isn't abstract to me. It's about understanding the world you actually live in.
