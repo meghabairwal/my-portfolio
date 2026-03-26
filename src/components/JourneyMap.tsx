@@ -320,7 +320,10 @@ export default function JourneyMap() {
                     transition: "all 0.18s",
                   }}
                 >
-                  <span style={{ fontSize: "0.85rem" }}>{stop.emoji}</span>
+                  {stop.id === "michigan"
+                    ? <img src="/Michigan_Wolverines_Block_M.png" style={{ width: 16, height: 12, objectFit: "contain" }} alt="M" />
+                    : <span style={{ fontSize: "0.85rem" }}>{stop.emoji}</span>
+                  }
                   <span style={{
                     fontSize: "0.7rem",
                     fontWeight: isActive ? 600 : 400,
@@ -397,7 +400,10 @@ export default function JourneyMap() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                      <span style={{ fontSize: "1.2rem" }}>{hs.emoji}</span>
+                      {hs.id === "michigan"
+                        ? <img src="/Michigan_Wolverines_Block_M.png" style={{ width: 22, height: 17, objectFit: "contain" }} alt="M" />
+                        : <span style={{ fontSize: "1.2rem" }}>{hs.emoji}</span>
+                      }
                       <span style={{ fontWeight: 700, fontSize: "0.85rem", color: hs.color }}>
                         {hs.name.split(",")[0]}
                       </span>
@@ -595,20 +601,29 @@ export default function JourneyMap() {
                             transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
                           />
                         )}
-                        <text
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          style={{
-                            fontSize: isFocused ? "16px" : "12px",
-                            cursor: "pointer",
-                            userSelect: "none",
-                            opacity: isRevealed ? 1 : 0.35,
-                            filter: isFocused ? `drop-shadow(0 0 6px ${stop.color})` : "none",
-                            transition: "font-size 0.15s, opacity 0.3s, filter 0.15s",
-                          }}
-                        >
-                          {stop.emoji}
-                        </text>
+                        {stop.id === "michigan" ? (
+                          <image
+                            href="/Michigan_Wolverines_Block_M.png"
+                            x={isFocused ? -10 : -7} y={isFocused ? -8 : -5}
+                            width={isFocused ? 20 : 14} height={isFocused ? 16 : 11}
+                            style={{ opacity: isRevealed ? 1 : 0.35, cursor: "pointer", transition: "opacity 0.3s" }}
+                          />
+                        ) : (
+                          <text
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            style={{
+                              fontSize: isFocused ? "16px" : "12px",
+                              cursor: "pointer",
+                              userSelect: "none",
+                              opacity: isRevealed ? 1 : 0.35,
+                              filter: isFocused ? `drop-shadow(0 0 6px ${stop.color})` : "none",
+                              transition: "font-size 0.15s, opacity 0.3s, filter 0.15s",
+                            }}
+                          >
+                            {stop.emoji}
+                          </text>
+                        )}
                         <text
                           textAnchor={labelAnchor}
                           x={labelDx} y={labelDy}
@@ -684,7 +699,10 @@ export default function JourneyMap() {
           >
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
-                <span style={{ fontSize: "1.4rem" }}>{displayStop.emoji}</span>
+                {displayStop.id === "michigan"
+                  ? <img src="/Michigan_Wolverines_Block_M.png" style={{ width: 28, height: 22, objectFit: "contain" }} alt="M" />
+                  : <span style={{ fontSize: "1.4rem" }}>{displayStop.emoji}</span>
+                }
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)" }}>{displayStop.name}</div>
                   <div className="mono" style={{ fontSize: "0.63rem", color: displayStop.color, marginTop: "0.05rem" }}>

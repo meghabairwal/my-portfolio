@@ -19,6 +19,23 @@ export default function Contact() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
+          <motion.img
+            src="/megha-photo-2.jpeg"
+            alt="Megha Bairwal"
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            style={{
+              width: 120, height: 120,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "2px solid var(--border-bright)",
+              marginBottom: "1.5rem",
+              display: "block",
+              margin: "0 auto 1.5rem",
+            }}
+          />
           <p className="section-label" style={{ marginBottom: "0.75rem" }}>// contact</p>
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 700, color: "var(--text)", marginBottom: "1rem" }}>
             Let&apos;s connect
